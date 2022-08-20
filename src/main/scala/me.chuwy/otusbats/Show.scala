@@ -9,20 +9,27 @@ object Show {
 
   // 1.1 Instances (`Int`, `String`, `Boolean`)
 
+  implicit val intShow: Show[Int] = fromFunction[Int](a => a.toString)
+
+  implicit val stringShow: Show[String] = fromFunction[String](a => a)
+
+  implicit val boolShow: Show[Boolean] = fromFunction[Boolean](a => if (a) "true" else "false")
 
   // 1.2 Instances with conditional implicit
 
   implicit def listShow[A](implicit ev: Show[A]): Show[List[A]] =
-    ???
+    fromFunction[List[A]](list => ev.show(list.toString))
 
 
   // 2. Summoner (apply)
+
+  def apply[A](implicit ev: Show[A]): Show[A] = ev
 
   // 3. Syntax extensions
 
   implicit class ShowOps[A](a: A) {
     def show(implicit ev: Show[A]): String =
-      ???
+      ev.show(a)
 
     def mkString_[B](begin: String, end: String, separator: String)(implicit S: Show[B], ev: A <:< List[B]): String = {
       // with `<:<` evidence `isInstanceOf` is safe!
@@ -46,9 +53,13 @@ object Show {
   // 4. Helper constructors
 
   /** Just use JVM `toString` implementation, available on every object */
-  def fromJvm[A]: Show[A] = ???
-  
+  def fromJvm[A]: Show[A] = new Show[A] {
+    override def show(a: A): String = a.toString
+  }
+
   /** Provide a custom function to avoid `new Show { ... }` machinery */
-  def fromFunction[A](f: A => String): Show[A] = ???
+  def fromFunction[A](f: A => String): Show[A] = new Show[A] {
+    override def show(a: A): String = f(a)
+  }
 
 }
